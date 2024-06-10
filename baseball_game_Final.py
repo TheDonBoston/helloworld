@@ -1,0 +1,132 @@
+# Program that simulates one player's at bat, game, or career if you keep batting.
+# Up to you!
+
+# Class for created players which saves three stats: at bats, hits, and batting average
+# We define this class first because the function of the game will need to call it
+
+# We import json to utilize Java Script's file handing abilities.
+# We import random to simulate a pitching vs hitting scenario in a game.
+
+import json
+import random
+
+
+class Player:
+
+    def __init__ (self, name, position):
+        """Call a player and their position."""
+        self.name = name
+        self.position = position
+        # H = hits, AB = at bats, BA = batting average
+        self.stats = {"H": 0.0, "AB": 0.0, "BA":0.000}
+
+    def save_ab(self):
+        """At bats go up, regardless of a hit or an out!"""
+        self.stats["AB"] += 1
+        self.update_batting_average()
+
+    def save_hit(self):
+        """Counts both the hit and the at bat itself!"""
+        self.stats["H"] += 1
+        self.stats["AB"] += 1
+        self.update_batting_average()
+
+    def update_batting_average(self):
+        """Calculates the batting average,
+        dividing hits by at bats."""
+        if self.stats["AB"] == 0:
+            self.stats["BA"] = 0.000
+        else:
+            self.stats["BA"] = self.stats["H"] / self.stats["AB"]
+    
+    def __str__(self):
+        """Shows the players name, their position, and their stats."""
+        return f"Player: {self.name}, Position: {self.position}, Stats: {self.stats}, Batting Average: {self.stats['BA']:.3f}"
+    
+    def save_stats_to_file(self):
+        """Saves players stats to a file for access later."""
+        with open(f"{self.name}_stats.json", "w") as file:
+            json.dump(self.stats, file)
+
+    def load_stats_from_file(self):
+        """Loads the players stats from the file."""
+        try:
+            with open(f"{self.name}_stats.json", "r") as file:
+                self.stats = json.load(file)
+                self.update_batting_average()
+        except FileNotFoundError:
+            print("No stats found for your player.")
+    
+# Game class which contains the function of the game itself.
+
+class Game:
+    
+    def __init__(self):
+        """Calls the game and the player."""
+        self.player = None
+
+    def create_your_player(self):
+        """Asks the user to make a player using name and position!"""
+        name = input("Enter your player's name: ")
+        position = input("Enter your player's position '1B, 2B, SS, 3B, LF, CF, RF, C': ")
+        self.player = Player(name, position)
+        self.player.load_stats_from_file()
+        print(f"Player created: {self.player}!")
+
+    def AB(self):
+        """Simulates a real at bat in baseball!"""
+        result = random.choice(["hit", "out"])
+        if result == "hit":
+            # Here we call the save_hit and save_ab functions to record the players actions
+            self.player.save_hit()
+            print(f"{self.player.name} GOT A HIT!!!")
+        else:
+            self.player.save_ab()
+            print(f"{self.player.name} is out!")
+        self.player.save_stats_to_file()
+        # Regardless of the outcome, print the players stats after the at bat
+        print(f"Current stats: {self.player.stats}")
+
+    def view_player_stats(self):
+        """See your player's up-to-date statistics!"""
+        if self.player:
+            print(self.player)
+        else:
+            print("NO PLAYER CREATED YET, MAKE IT HAPPEN USER!")
+
+    def rungame(self):
+        """This runs the game program using recursion. We used 'rungame' due
+        to the fact that a 'run' in baseball is
+        a score.
+        It will ask the user to choose option 1, 2, or 3."""
+
+        print("1.) Start Game!")
+        print("2.) View Player Stats")
+        print("3.) Exit")
+        choice = input("Choose an option number: ")
+        if choice == "1":
+            self.create_your_player()
+            self.AB_loop()
+        elif choice == "2":
+            self.view_player_stats()
+        elif choice == "3":
+            if self.player:
+                # This saves the player stats before exiting the game
+                self.player.save_stats_to_file()
+            print("Exiting game!")
+            return
+        else:
+            print("Invalid input. Choose a number: 1, 2, or 3")
+        self.rungame()
+
+    def AB_loop(self):
+        """Recursive function to handle the at-bats in the game."""
+        self.AB()
+        cont = input("Go to next at-bat? (y/n): ")
+        if cont.lower() == "y":
+            self.AB_loop()
+        else:
+            return
+
+game = Game()
+game.rungame()
